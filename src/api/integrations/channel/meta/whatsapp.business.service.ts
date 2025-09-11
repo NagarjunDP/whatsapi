@@ -1014,6 +1014,7 @@ export class BusinessStartupService extends ChannelStartupService {
             [message['mediaType']]: {
               [message['type']]: message['id'],
               ...(message['mediaType'] !== 'audio' &&
+                message['mediaType'] !== 'video' &&
                 message['fileName'] &&
                 !isImage && { filename: message['fileName'] }),
               ...(message['mediaType'] !== 'audio' && message['caption'] && { caption: message['caption'] }),
