@@ -55,7 +55,7 @@ export function makeProxyAgentUndici(proxy: Proxy | string): ProxyAgent {
     proxyUrl = proxy
   } else {
     const { host, password, port, protocol: proto, username } = proxy
-    protocol = proto.replace(':', '')
+    protocol = (proto || 'http').replace(':', '')
 
     if (protocol === 'socks') {
       protocol = 'socks5'
