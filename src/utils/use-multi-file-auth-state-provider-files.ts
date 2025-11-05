@@ -97,7 +97,7 @@ export class AuthStateProvider {
         return;
       }
 
-      logger.info({ action: 'remove.session', instance });
+      logger.info({ action: 'remove.session', instance, response });
 
       return;
     };
