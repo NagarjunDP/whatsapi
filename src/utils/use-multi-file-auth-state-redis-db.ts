@@ -39,7 +39,6 @@ export async function useMultiFileAuthStateRedisDb(
 
   async function removeCreds(): Promise<any> {
     try {
-
       logger.warn({ action: 'redis.delete', instanceName });
 
       return await cache.delete(instanceName);
@@ -89,6 +88,6 @@ export async function useMultiFileAuthStateRedisDb(
       return await writeData(creds, 'creds');
     },
 
-    removeCreds
+    removeCreds,
   };
 }

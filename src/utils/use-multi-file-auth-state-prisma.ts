@@ -1,11 +1,11 @@
 import { prismaRepository } from '@api/server.module';
 import { CacheService } from '@api/services/cache.service';
 import { CacheConf, configService } from '@config/env.config';
+import { Logger } from '@config/logger.config';
 import { INSTANCE_DIR } from '@config/path.config';
 import { AuthenticationState, BufferJSON, initAuthCreds, WAProto as proto } from 'baileys';
 import fs from 'fs/promises';
 import path from 'path';
-import {Logger} from "@config/logger.config";
 
 const fixFileName = (file: string): string | undefined => {
   if (!file) {
@@ -147,7 +147,6 @@ export default async function useMultiFileAuthStatePrisma(
   }
 
   async function removeCreds(): Promise<any> {
-
     const cacheConfig = configService.get<CacheConf>('CACHE');
 
     // Redis
@@ -156,7 +155,7 @@ export default async function useMultiFileAuthStatePrisma(
         await cache.delete(sessionId);
         logger.info({ action: 'redis.delete', sessionId });
 
-        return
+        return;
       }
     } catch (err) {
       logger.warn({ action: 'redis.delete', sessionId, err });
@@ -209,6 +208,6 @@ export default async function useMultiFileAuthStatePrisma(
       return writeData(creds, 'creds');
     },
 
-    removeCreds
+    removeCreds,
   };
 }

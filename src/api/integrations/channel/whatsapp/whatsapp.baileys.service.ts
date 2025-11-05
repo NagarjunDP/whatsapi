@@ -273,19 +273,19 @@ export class BaileysStartupService extends ChannelStartupService {
     if (provider?.ENABLED) {
       const authState = await this.authStateProvider.authStateProvider(this.instance.id);
 
-      await authState.removeCreds()
+      await authState.removeCreds();
     }
 
     if (cache?.REDIS.ENABLED && cache?.REDIS.SAVE_INSTANCES) {
       const authState = await useMultiFileAuthStateRedisDb(this.instance.id, this.cache);
 
-      await authState.removeCreds()
+      await authState.removeCreds();
     }
 
     if (db.SAVE_DATA.INSTANCE) {
       const authState = await useMultiFileAuthStatePrisma(this.instance.id, this.cache);
 
-      await authState.removeCreds()
+      await authState.removeCreds();
     }
 
     const sessionExists = await this.prismaRepository.session.findFirst({ where: { sessionId: this.instanceId } });

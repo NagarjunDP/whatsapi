@@ -41,7 +41,7 @@ import { isNotEmpty } from 'class-validator';
 
 export type AuthState = {
   state: AuthenticationState;
-  saveCreds: () => Promise<void>
+  saveCreds: () => Promise<void>;
   removeCreds: () => Promise<void>;
 };
 
@@ -91,7 +91,6 @@ export class AuthStateProvider {
     };
 
     const removeCreds = async () => {
-
       const [response, error] = await this.providerFiles.removeSession(instance);
       if (error) {
         // this.logger.error(['removeData', error?.message, error?.stack]);
@@ -144,7 +143,7 @@ export class AuthStateProvider {
         return await writeData(creds, 'creds');
       },
 
-      removeCreds
+      removeCreds,
     };
   }
 }
