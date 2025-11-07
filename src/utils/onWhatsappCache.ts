@@ -117,24 +117,19 @@ export async function saveOnWhatsappCache(data: ISaveOnWhatsappCacheParams[]) {
         `Saving: remoteJid=${remoteJid}, jidOptions=${uniqueNumbers.join(',')}, lid=${item.lid === 'lid' || item.remoteJid?.includes('@lid') ? 'lid' : null}`,
       );
 
-      if (existingRecord) {
-        await prismaRepository.isOnWhatsapp.update({
-          where: { id: existingRecord.id },
-          data: {
-            remoteJid: remoteJid,
-            jidOptions: uniqueNumbers.join(','),
-            lid: item.lid === 'lid' || item.remoteJid?.includes('@lid') ? 'lid' : null,
-          },
-        });
-      } else {
-        await prismaRepository.isOnWhatsapp.create({
-          data: {
-            remoteJid: remoteJid,
-            jidOptions: uniqueNumbers.join(','),
-            lid: item.lid === 'lid' || item.remoteJid?.includes('@lid') ? 'lid' : null,
-          },
-        });
-      }
+      await prismaRepository.isOnWhatsapp.upsert({
+        where: { remoteJid: remoteJid },
+
+        update: {
+          jidOptions: uniqueNumbers.join(','),
+          lid: item.lid === 'lid' || item.remoteJid?.includes('@lid') ? 'lid' : null,
+        },
+        create: {
+          remoteJid: remoteJid,
+          jidOptions: uniqueNumbers.join(','),
+          lid: item.lid === 'lid' || item.remoteJid?.includes('@lid') ? 'lid' : null,
+        },
+      });
     }
   }
 }
