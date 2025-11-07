@@ -170,7 +170,8 @@ export async function saveOnWhatsappCache(data: ISaveOnWhatsappCacheParams[]) {
       }
     } catch (e) {
       // Loga o erro mas não para a execução dos outros promises
-      logger.error(`[saveOnWhatsappCache] Error processing item for ${item.remoteJid}: `, e);
+      logger.error(`[saveOnWhatsappCache] Error processing item for ${item.remoteJid}: `);
+      logger.error(e);
     }
   });
 
