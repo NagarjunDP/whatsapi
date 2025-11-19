@@ -64,7 +64,7 @@ export function makeProxyAgentUndici(proxy: Proxy | string): ProxyAgent | SocksP
 
     const auth = username && password ? `${username}:${password}@` : '';
     proxyUrl = `${protocol}://${auth}${host}:${port}`;
-  };
+  }
 
   const PROXY_HTTP_PROTOCOL = 'http';
   const PROXY_HTTPS_PROTOCOL = 'https';
