@@ -1,6 +1,6 @@
-import { ProxyAgent } from 'undici';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { SocksProxyAgent } from 'socks-proxy-agent';
+import { ProxyAgent } from 'undici';
 
 type Proxy = {
   host: string;
