@@ -1,3 +1,4 @@
+import { socksDispatcher } from 'fetch-socks';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { ProxyAgent } from 'undici';
@@ -46,7 +47,7 @@ export function makeProxyAgent(proxy: Proxy | string): HttpsProxyAgent<string> |
   return selectProxyAgent(proxyUrl);
 }
 
-export function makeProxyAgentUndici(proxy: Proxy | string): ProxyAgent | SocksProxyAgent {
+export function makeProxyAgentUndici(proxy: Proxy | string) {
   let proxyUrl: string;
   let protocol: string;
 
@@ -57,14 +58,14 @@ export function makeProxyAgentUndici(proxy: Proxy | string): ProxyAgent | SocksP
   } else {
     const { host, password, port, protocol: proto, username } = proxy;
     protocol = (proto || 'http').replace(':', '');
-
-    if (protocol === 'socks') {
-      protocol = 'socks5';
-    }
+    if (protocol === 'socks') protocol = 'socks5';
 
     const auth = username && password ? `${username}:${password}@` : '';
     proxyUrl = `${protocol}://${auth}${host}:${port}`;
   }
+
+  // Normalização
+  protocol = protocol.toLowerCase();
 
   const PROXY_HTTP_PROTOCOL = 'http';
   const PROXY_HTTPS_PROTOCOL = 'https';
@@ -74,10 +75,26 @@ export function makeProxyAgentUndici(proxy: Proxy | string): ProxyAgent | SocksP
   switch (protocol) {
     case PROXY_HTTP_PROTOCOL:
     case PROXY_HTTPS_PROTOCOL:
+      // Proxy HTTP/HTTPS → usar ProxyAgent do Undici
       return new ProxyAgent(proxyUrl);
+
     case PROXY_SOCKS4_PROTOCOL:
-    case PROXY_SOCKS5_PROTOCOL:
-      return new SocksProxyAgent(proxyUrl);
+    case PROXY_SOCKS5_PROTOCOL: {
+      let type: 4 | 5 = 5;
+
+      if (PROXY_SOCKS4_PROTOCOL === protocol) type = 4;
+
+      const url = new URL(proxyUrl);
+
+      return socksDispatcher({
+        type: type,
+        host: url.hostname,
+        port: Number(url.port),
+        userId: url.username || undefined,
+        password: url.password || undefined,
+      });
+    }
+
     default:
       throw new Error(`Unsupported proxy protocol: ${protocol}`);
   }
