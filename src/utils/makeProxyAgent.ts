@@ -19,11 +19,13 @@ function selectProxyAgent(proxyUrl: string): HttpsProxyAgent<string> | SocksProx
   // the end so, we add the protocol constants without the `:` to avoid confusion.
   const PROXY_HTTP_PROTOCOL = 'http:';
   const PROXY_SOCKS_PROTOCOL = 'socks:';
+  const PROXY_SOCKS5_PROTOCOL = 'socks5:';
 
   switch (url.protocol) {
     case PROXY_HTTP_PROTOCOL:
       return new HttpsProxyAgent(url);
     case PROXY_SOCKS_PROTOCOL:
+    case PROXY_SOCKS5_PROTOCOL:
       return new SocksProxyAgent(url);
     default:
       throw new Error(`Unsupported proxy protocol: ${url.protocol}`);
@@ -45,7 +47,7 @@ export function makeProxyAgent(proxy: Proxy | string): HttpsProxyAgent<string> |
   return selectProxyAgent(proxyUrl);
 }
 
-export function makeProxyAgentUndici(proxy: Proxy | string): ProxyAgent {
+export function makeProxyAgentUndici(proxy: Proxy | string): ProxyAgent|SocksProxyAgent {
   let proxyUrl: string
   let protocol: string
 
@@ -73,10 +75,10 @@ export function makeProxyAgentUndici(proxy: Proxy | string): ProxyAgent {
   switch (protocol) {
     case PROXY_HTTP_PROTOCOL:
     case PROXY_HTTPS_PROTOCOL:
+      return new ProxyAgent(proxyUrl)
     case PROXY_SOCKS4_PROTOCOL:
     case PROXY_SOCKS5_PROTOCOL:
-      return new ProxyAgent(proxyUrl)
-
+      return new SocksProxyAgent(proxyUrl)
     default:
       throw new Error(`Unsupported proxy protocol: ${protocol}`)
   }
