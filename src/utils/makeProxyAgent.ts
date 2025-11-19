@@ -1,7 +1,6 @@
+import { ProxyAgent } from 'undici';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { SocksProxyAgent } from 'socks-proxy-agent';
-
-import { ProxyAgent } from 'undici'
 
 type Proxy = {
   host: string;
@@ -47,7 +46,7 @@ export function makeProxyAgent(proxy: Proxy | string): HttpsProxyAgent<string> |
   return selectProxyAgent(proxyUrl);
 }
 
-export function makeProxyAgentUndici(proxy: Proxy | string): ProxyAgent|SocksProxyAgent {
+export function makeProxyAgentUndici(proxy: Proxy | string): ProxyAgent | SocksProxyAgent {
   let proxyUrl: string;
   let protocol: string;
 
@@ -65,8 +64,8 @@ export function makeProxyAgentUndici(proxy: Proxy | string): ProxyAgent|SocksPro
 
     const auth = username && password ? `${username}:${password}@` : '';
     proxyUrl = `${protocol}://${auth}${host}:${port}`;
-  }
-;
+  };
+
   const PROXY_HTTP_PROTOCOL = 'http';
   const PROXY_HTTPS_PROTOCOL = 'https';
   const PROXY_SOCKS4_PROTOCOL = 'socks4';
