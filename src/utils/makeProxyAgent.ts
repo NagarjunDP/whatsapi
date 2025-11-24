@@ -28,7 +28,7 @@ function selectProxyAgent(proxyUrl: string): HttpsProxyAgent<string> | SocksProx
     case PROXY_SOCKS5_PROTOCOL: {
       let urlSocks = '';
 
-      if(url.username && url.password) {
+      if (url.username && url.password) {
         urlSocks = `socks://${url.username}:${url.password}@${url.hostname}:${url.port}`;
       } else {
         urlSocks = `socks://${url.hostname}:${url.port}`;
