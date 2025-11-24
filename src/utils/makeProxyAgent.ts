@@ -1,7 +1,7 @@
 import { socksDispatcher } from 'fetch-socks';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { SocksProxyAgent } from 'socks-proxy-agent';
-import { ProxyAgent } from 'undici';
+import { Agent, ProxyAgent } from 'undici';
 
 type Proxy = {
   host: string;
@@ -26,7 +26,16 @@ function selectProxyAgent(proxyUrl: string): HttpsProxyAgent<string> | SocksProx
       return new HttpsProxyAgent(url);
     case PROXY_SOCKS_PROTOCOL:
     case PROXY_SOCKS5_PROTOCOL:
-      return new SocksProxyAgent(url);
+
+      let urlSocks = '';
+
+      if(url.username && url.password) {
+        urlSocks = `socks://${url.username}:${url.password}@${url.hostname}:${url.port}`;
+      } else {
+        urlSocks = `socks://${url.hostname}:${url.port}`;
+      }
+
+      return new SocksProxyAgent(urlSocks);
     default:
       throw new Error(`Unsupported proxy protocol: ${url.protocol}`);
   }
