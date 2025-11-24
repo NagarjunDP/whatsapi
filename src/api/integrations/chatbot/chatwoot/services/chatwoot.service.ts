@@ -27,6 +27,7 @@ import { WAMessageContent, WAMessageKey } from 'baileys';
 import dayjs from 'dayjs';
 import FormData from 'form-data';
 import { Jimp, JimpMime } from 'jimp';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import Long from 'long';
 import mimeTypes from 'mime-types';
 import path from 'path';
@@ -589,7 +590,7 @@ export class ChatwootService {
             `Identifier needs update: (contact.identifier: ${contact.identifier}, phoneNumber: ${phoneNumber}, body.key.remoteJidAlt: ${remoteJid}`,
           );
           const updateContact = await this.updateContact(instance, contact.id, {
-            identifier: remoteJid,
+            identifier: phoneNumber,
             phone_number: `+${phoneNumber.split('@')[0]}`,
           });
 
@@ -611,13 +612,15 @@ export class ChatwootService {
       if (await this.cache.has(cacheKey)) {
         const conversationId = (await this.cache.get(cacheKey)) as number;
         this.logger.verbose(`Found conversation to: ${phoneNumber}, conversation ID: ${conversationId}`);
-        let conversationExists: conversation | boolean;
+        let conversationExists: any;
         try {
           conversationExists = await client.conversations.get({
             accountId: this.provider.accountId,
             conversationId: conversationId,
           });
-          this.logger.verbose(`Conversation exists: ${JSON.stringify(conversationExists)}`);
+          this.logger.verbose(
+            `Conversation exists: ID: ${conversationExists.id} - Name: ${conversationExists.meta.sender.name} - Identifier: ${conversationExists.meta.sender.identifier}`,
+          );
         } catch (error) {
           this.logger.error(`Error getting conversation: ${error}`);
           conversationExists = false;
@@ -669,7 +672,7 @@ export class ChatwootService {
         if (isGroup) {
           this.logger.verbose(`Processing group conversation`);
           const group = await this.waMonitor.waInstances[instance.instanceName].client.groupMetadata(chatId);
-          this.logger.verbose(`Group metadata: ${JSON.stringify(group)}`);
+          this.logger.verbose(`Group metadata: JID:${group.JID} - Subject:${group?.subject || group?.Name}`);
 
           const participantJid = isLid && !body.key.fromMe ? body.key.participantAlt : body.key.participant;
           nameContact = `${group.subject} (GROUP)`;
@@ -680,9 +683,11 @@ export class ChatwootService {
           this.logger.verbose(`Participant profile picture URL: ${JSON.stringify(picture_url)}`);
 
           const findParticipant = await this.findContact(instance, participantJid.split('@')[0]);
-          this.logger.verbose(`Found participant: ${JSON.stringify(findParticipant)}`);
 
           if (findParticipant) {
+            this.logger.verbose(
+              `Found participant: ID:${findParticipant.id} - Name: ${findParticipant.name} - identifier: ${findParticipant.identifier}`,
+            );
             if (!findParticipant.name || findParticipant.name === chatId) {
               await this.updateContact(instance, findParticipant.id, {
                 name: body.pushName,
@@ -692,7 +697,7 @@ export class ChatwootService {
           } else {
             await this.createContact(
               instance,
-              participantJid.split('@')[0],
+              participantJid.split('@')[0].split(':')[0],
               filterInbox.id,
               false,
               body.pushName,
@@ -709,20 +714,13 @@ export class ChatwootService {
         let contact = await this.findContact(instance, chatId);
 
         if (contact) {
-          this.logger.verbose(`Found contact: ${JSON.stringify(contact)}`);
+          this.logger.verbose(`Found contact: ID:${contact.id} - Name:${contact.name}`);
           if (!body.key.fromMe) {
             const waProfilePictureFile =
               picture_url?.profilePictureUrl?.split('#')[0].split('?')[0].split('/').pop() || '';
             const chatwootProfilePictureFile = contact?.thumbnail?.split('#')[0].split('?')[0].split('/').pop() || '';
             const pictureNeedsUpdate = waProfilePictureFile !== chatwootProfilePictureFile;
-            const nameNeedsUpdate =
-              !contact.name ||
-              contact.name === chatId ||
-              (`+${chatId}`.startsWith('+55')
-                ? this.getNumbers(`+${chatId}`).some(
-                    (v) => contact.name === v || contact.name === v.substring(3) || contact.name === v.substring(1),
-                  )
-                : false);
+            const nameNeedsUpdate = !contact.name || contact.name === chatId;
             this.logger.verbose(`Picture needs update: ${pictureNeedsUpdate}`);
             this.logger.verbose(`Name needs update: ${nameNeedsUpdate}`);
             if (pictureNeedsUpdate || nameNeedsUpdate) {
@@ -741,7 +739,7 @@ export class ChatwootService {
             isGroup,
             nameContact,
             picture_url.profilePictureUrl || null,
-            remoteJid,
+            phoneNumber,
           );
         }
 
@@ -757,7 +755,6 @@ export class ChatwootService {
           accountId: this.provider.accountId,
           id: contactId,
         })) as any;
-        this.logger.verbose(`Contact conversations: ${JSON.stringify(contactConversations)}`);
 
         if (!contactConversations || !contactConversations.payload) {
           this.logger.error(`No conversations found or payload is undefined`);
@@ -769,7 +766,9 @@ export class ChatwootService {
         );
         if (inboxConversation) {
           if (this.provider.reopenConversation) {
-            this.logger.verbose(`Found conversation in reopenConversation mode: ${JSON.stringify(inboxConversation)}`);
+            this.logger.verbose(
+              `Found conversation in reopenConversation mode: ID: ${inboxConversation.id} - Name: ${inboxConversation.meta.sender.name} - Identifier: ${inboxConversation.meta.sender.identifier}`,
+            );
             if (inboxConversation && this.provider.conversationPending && inboxConversation.status !== 'open') {
               await client.conversations.toggleStatus({
                 accountId: this.provider.accountId,
@@ -789,7 +788,7 @@ export class ChatwootService {
 
           if (inboxConversation) {
             this.logger.verbose(`Returning existing conversation ID: ${inboxConversation.id}`);
-            this.cache.set(cacheKey, inboxConversation.id, 8 * 3600);
+            this.cache.set(cacheKey, inboxConversation.id, 1800);
             return inboxConversation.id;
           }
         }
@@ -803,14 +802,6 @@ export class ChatwootService {
           data['status'] = 'pending';
         }
 
-        /*
-        Triple check after lock
-        Utilizei uma nova verificação para evitar que outra thread execute entre o terminio do while e o set lock
-        */
-        if (await this.cache.has(cacheKey)) {
-          return (await this.cache.get(cacheKey)) as number;
-        }
-
         const conversation = await client.conversations.create({
           accountId: this.provider.accountId,
           data,
@@ -822,7 +813,7 @@ export class ChatwootService {
         }
 
         this.logger.verbose(`New conversation created of ${remoteJid} with ID: ${conversation.id}`);
-        this.cache.set(cacheKey, conversation.id, 8 * 3600);
+        this.cache.set(cacheKey, conversation.id, 1800);
         return conversation.id;
       } finally {
         await this.cache.delete(lockKey);
@@ -1392,10 +1383,7 @@ export class ChatwootService {
       }
 
       if (body.message_type === 'outgoing' && body?.conversation?.messages?.length && chatId !== '123456') {
-        if (
-          body?.conversation?.messages[0]?.source_id?.substring(0, 5) === 'WAID:' &&
-          body?.conversation?.messages[0]?.id === body?.id
-        ) {
+        if (body?.conversation?.messages[0]?.source_id?.substring(0, 5) === 'WAID:') {
           return { message: 'bot' };
         }
 
@@ -1664,6 +1652,10 @@ export class ChatwootService {
     const result = messageKeys.some((key) => media.includes(key));
 
     return result;
+  }
+
+  private isInteractiveButtonMessage(messageType: string, message: any) {
+    return messageType === 'interactiveMessage' && message.interactiveMessage?.nativeFlowMessage?.buttons?.length > 0;
   }
 
   private getAdsMessage(msg: any) {
@@ -1984,8 +1976,9 @@ export class ChatwootService {
         const adsMessage = this.getAdsMessage(body);
 
         const reactionMessage = this.getReactionMessage(body.message);
+        const isInteractiveButtonMessage = this.isInteractiveButtonMessage(body.messageType, body.message);
 
-        if (!bodyMessage && !isMedia && !reactionMessage) {
+        if (!bodyMessage && !isMedia && !reactionMessage && !isInteractiveButtonMessage) {
           this.logger.warn('no body message found');
           return;
         }
@@ -2032,17 +2025,9 @@ export class ChatwootService {
             const participantName = body.pushName;
             const rawPhoneNumber =
               body.key.addressingMode === 'lid' && !body.key.fromMe
-                ? body.key.participantAlt.split('@')[0]
-                : body.key.participant.split('@')[0];
-            const phoneMatch = rawPhoneNumber.match(/^(\d{2})(\d{2})(\d{4})(\d{4})$/);
-
-            let formattedPhoneNumber: string;
-
-            if (phoneMatch) {
-              formattedPhoneNumber = `+${phoneMatch[1]} (${phoneMatch[2]}) ${phoneMatch[3]}-${phoneMatch[4]}`;
-            } else {
-              formattedPhoneNumber = `+${rawPhoneNumber}`;
-            }
+                ? body.key.participantAlt.split('@')[0].split(':')[0]
+                : body.key.participant.split('@')[0].split(':')[0];
+            const formattedPhoneNumber = parsePhoneNumberFromString(`+${rawPhoneNumber}`).formatInternational();
 
             let content: string;
 
@@ -2118,6 +2103,50 @@ export class ChatwootService {
           return;
         }
 
+        if (isInteractiveButtonMessage) {
+          const buttons = body.message.interactiveMessage.nativeFlowMessage.buttons;
+          this.logger.info('is Interactive Button Message: ' + JSON.stringify(buttons));
+
+          for (const button of buttons) {
+            const buttonParams = JSON.parse(button.buttonParamsJson);
+            const paymentSettings = buttonParams.payment_settings;
+
+            if (button.name === 'payment_info' && paymentSettings[0].type === 'pix_static_code') {
+              const pixSettings = paymentSettings[0].pix_static_code;
+              const pixKeyType = (() => {
+                switch (pixSettings.key_type) {
+                  case 'EVP':
+                    return 'Chave Aleatória';
+                  case 'EMAIL':
+                    return 'E-mail';
+                  case 'PHONE':
+                    return 'Telefone';
+                  default:
+                    return pixSettings.key_type;
+                }
+              })();
+              const pixKey = pixSettings.key_type === 'PHONE' ? pixSettings.key.replace('+55', '') : pixSettings.key;
+              const content = `*${pixSettings.merchant_name}*\nChave PIX: ${pixKey} (${pixKeyType})`;
+
+              const send = await this.createMessage(
+                instance,
+                getConversation,
+                content,
+                messageType,
+                false,
+                [],
+                body,
+                'WAID:' + body.key.id,
+                quotedMsg,
+              );
+              if (!send) this.logger.warn('message not sent');
+            } else {
+              this.logger.warn('Interactive Button Message not mapped');
+            }
+          }
+          return;
+        }
+
         const isAdsMessage = (adsMessage && adsMessage.title) || adsMessage.body || adsMessage.thumbnailUrl;
         if (isAdsMessage) {
           const imgBuffer = await axios.get(adsMessage.thumbnailUrl, { responseType: 'arraybuffer' });
@@ -2178,17 +2207,9 @@ export class ChatwootService {
           const participantName = body.pushName;
           const rawPhoneNumber =
             body.key.addressingMode === 'lid' && !body.key.fromMe
-              ? body.key.participantAlt.split('@')[0]
-              : body.key.participant.split('@')[0];
-          const phoneMatch = rawPhoneNumber.match(/^(\d{2})(\d{2})(\d{4})(\d{4})$/);
-
-          let formattedPhoneNumber: string;
-
-          if (phoneMatch) {
-            formattedPhoneNumber = `+${phoneMatch[1]} (${phoneMatch[2]}) ${phoneMatch[3]}-${phoneMatch[4]}`;
-          } else {
-            formattedPhoneNumber = `+${rawPhoneNumber}`;
-          }
+              ? body.key.participantAlt.split('@')[0].split(':')[0]
+              : body.key.participant.split('@')[0].split(':')[0];
+          const formattedPhoneNumber = parsePhoneNumberFromString(`+${rawPhoneNumber}`).formatInternational();
 
           let content: string;
 
@@ -2270,8 +2291,21 @@ export class ChatwootService {
       }
 
       if (event === 'messages.edit' || event === 'send.message.update') {
-        const editedMessageContent =
-          body?.editedMessage?.conversation || body?.editedMessage?.extendedTextMessage?.text;
+        const editedMessageContentRaw =
+          body?.editedMessage?.conversation ??
+          body?.editedMessage?.extendedTextMessage?.text ??
+          body?.editedMessage?.imageMessage?.caption ??
+          body?.editedMessage?.videoMessage?.caption ??
+          body?.editedMessage?.documentMessage?.caption ??
+          (typeof body?.text === 'string' ? body.text : undefined);
+
+        const editedMessageContent = (editedMessageContentRaw ?? '').trim();
+
+        if (!editedMessageContent) {
+          this.logger.info('[CW.EDIT] Conteúdo vazio — ignorando (DELETE tratará se for revoke).');
+          return;
+        }
+
         const message = await this.getMessageByKeyId(instance, body?.key?.id);
 
         if (!message) {
@@ -2338,7 +2372,7 @@ export class ChatwootService {
             const url =
               `/public/api/v1/inboxes/${inbox.inbox_identifier}/contacts/${sourceId}` +
               `/conversations/${conversationId}/update_last_seen`;
-            chatwootRequest(this.getClientCwConfig(), {
+            await chatwootRequest(this.getClientCwConfig(), {
               method: 'POST',
               url: url,
             });
