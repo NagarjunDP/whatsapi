@@ -1,7 +1,7 @@
 import { socksDispatcher } from 'fetch-socks';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { SocksProxyAgent } from 'socks-proxy-agent';
-import { Agent, ProxyAgent } from 'undici';
+import { ProxyAgent } from 'undici';
 
 type Proxy = {
   host: string;
@@ -25,8 +25,7 @@ function selectProxyAgent(proxyUrl: string): HttpsProxyAgent<string> | SocksProx
     case PROXY_HTTP_PROTOCOL:
       return new HttpsProxyAgent(url);
     case PROXY_SOCKS_PROTOCOL:
-    case PROXY_SOCKS5_PROTOCOL:
-
+    case PROXY_SOCKS5_PROTOCOL: {
       let urlSocks = '';
 
       if(url.username && url.password) {
@@ -36,6 +35,7 @@ function selectProxyAgent(proxyUrl: string): HttpsProxyAgent<string> | SocksProx
       }
 
       return new SocksProxyAgent(urlSocks);
+    }
     default:
       throw new Error(`Unsupported proxy protocol: ${url.protocol}`);
   }
@@ -73,7 +73,6 @@ export function makeProxyAgentUndici(proxy: Proxy | string) {
     proxyUrl = `${protocol}://${auth}${host}:${port}`;
   }
 
-  // Normalização
   protocol = protocol.toLowerCase();
 
   const PROXY_HTTP_PROTOCOL = 'http';
@@ -84,7 +83,6 @@ export function makeProxyAgentUndici(proxy: Proxy | string) {
   switch (protocol) {
     case PROXY_HTTP_PROTOCOL:
     case PROXY_HTTPS_PROTOCOL:
-      // Proxy HTTP/HTTPS → usar ProxyAgent do Undici
       return new ProxyAgent(proxyUrl);
 
     case PROXY_SOCKS4_PROTOCOL:
