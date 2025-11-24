@@ -839,9 +839,8 @@ export class BaileysStartupService extends ChannelStartupService {
           this.sendDataWebhook(Events.CONTACTS_UPDATE, updatedContacts);
           await Promise.all(
             updatedContacts.map(async (contact) => {
-              let update;
               if (this.configService.get<Database>('DATABASE').SAVE_DATA.CONTACTS) {
-                update = this.prismaRepository.contact.updateMany({
+                await this.prismaRepository.contact.updateMany({
                   where: { remoteJid: contact.remoteJid, instanceId: this.instanceId },
                   data: { profilePicUrl: contact.profilePicUrl },
                 });
@@ -865,8 +864,6 @@ export class BaileysStartupService extends ChannelStartupService {
                   avatar_url: contact.profilePicUrl,
                 });
               }
-
-              return update;
             }),
           );
         }
