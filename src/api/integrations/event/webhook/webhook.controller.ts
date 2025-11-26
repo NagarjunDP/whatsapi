@@ -65,6 +65,7 @@ export class WebhookController extends EventController implements EventControlle
     apiKey,
     local,
     integration,
+    extra,
   }: EmitData): Promise<void> {
     if (integration && !integration.includes('webhook')) {
       return;
@@ -98,6 +99,7 @@ export class WebhookController extends EventController implements EventControlle
       sender,
       server_url: serverUrl,
       apikey: apiKey,
+      ...extra,
     };
 
     if (local && instance?.enabled) {

@@ -1022,7 +1022,10 @@ export class BaileysStartupService extends ChannelStartupService {
           messagesRaw.push(this.prepareMessage(m));
         }
 
-        this.sendDataWebhook(Events.MESSAGES_SET, [...messagesRaw]);
+        this.sendDataWebhook(Events.MESSAGES_SET, [...messagesRaw], true, undefined, {
+          isLatest,
+          progress,
+        });
 
         if (this.configService.get<Database>('DATABASE').SAVE_DATA.HISTORIC) {
           await this.prismaRepository.message.createMany({ data: messagesRaw, skipDuplicates: true });

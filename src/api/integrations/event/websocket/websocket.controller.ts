@@ -115,6 +115,7 @@ export class WebsocketController extends EventController implements EventControl
     sender,
     apiKey,
     integration,
+    extra,
   }: EmitData): Promise<void> {
     if (integration && !integration.includes('websocket')) {
       return;
@@ -134,6 +135,7 @@ export class WebsocketController extends EventController implements EventControl
       date_time: dateTime,
       sender,
       apikey: apiKey,
+      ...extra,
     };
 
     if (configService.get<Websocket>('WEBSOCKET')?.GLOBAL_EVENTS) {

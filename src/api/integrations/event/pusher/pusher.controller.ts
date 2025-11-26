@@ -121,6 +121,7 @@ export class PusherController extends EventController implements EventController
     apiKey,
     local,
     integration,
+    extra,
   }: EmitData): Promise<void> {
     if (integration && !integration.includes('pusher')) {
       return;
@@ -141,6 +142,7 @@ export class PusherController extends EventController implements EventController
       sender,
       server_url: serverUrl,
       apikey: apiKey,
+      ...extra,
     };
     if (event == 'qrcode.updated') {
       delete pusherData.data.qrcode.base64;

@@ -262,6 +262,7 @@ export class KafkaController extends EventController implements EventControllerI
     sender,
     apiKey,
     integration,
+    extra,
   }: EmitData): Promise<void> {
     if (integration && !integration.includes('kafka')) {
       return;
@@ -292,6 +293,7 @@ export class KafkaController extends EventController implements EventControllerI
       sender,
       apikey: apiKey,
       timestamp: Date.now(),
+      ...extra,
     };
 
     const messageValue = JSON.stringify(message);

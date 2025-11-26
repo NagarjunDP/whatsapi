@@ -209,6 +209,7 @@ export class RabbitmqController extends EventController implements EventControll
     sender,
     apiKey,
     integration,
+    extra,
   }: EmitData): Promise<void> {
     if (integration && !integration.includes('rabbitmq')) {
       return;
@@ -240,6 +241,7 @@ export class RabbitmqController extends EventController implements EventControll
       date_time: dateTime,
       sender,
       apikey: apiKey,
+      ...extra,
     };
 
     if (instanceRabbitmq?.enabled && this.amqpChannel) {
