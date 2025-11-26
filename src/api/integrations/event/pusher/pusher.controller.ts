@@ -134,6 +134,7 @@ export class PusherController extends EventController implements EventController
     const enabledLog = configService.get<Log>('LOG').LEVEL.includes('WEBHOOKS');
     const eventName = event.replace(/_/g, '.').toLowerCase();
     const pusherData = {
+      ...(extra ?? {}),
       event,
       instance: instanceName,
       data,
@@ -142,7 +143,6 @@ export class PusherController extends EventController implements EventController
       sender,
       server_url: serverUrl,
       apikey: apiKey,
-      ...extra,
     };
     if (event == 'qrcode.updated') {
       delete pusherData.data.qrcode.base64;

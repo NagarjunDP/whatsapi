@@ -285,6 +285,7 @@ export class KafkaController extends EventController implements EventControllerI
     const logEnabled = configService.get<Log>('LOG').LEVEL.includes('WEBHOOKS');
 
     const message = {
+      ...(extra ?? {}),
       event,
       instance: instanceName,
       data,
@@ -293,7 +294,6 @@ export class KafkaController extends EventController implements EventControllerI
       sender,
       apikey: apiKey,
       timestamp: Date.now(),
-      ...extra,
     };
 
     const messageValue = JSON.stringify(message);

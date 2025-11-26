@@ -66,6 +66,7 @@ export class NatsController extends EventController implements EventControllerIn
     const logEnabled = configService.get<Log>('LOG').LEVEL.includes('WEBHOOKS');
 
     const message = {
+      ...(extra ?? {}),
       event,
       instance: instanceName,
       data,
@@ -73,7 +74,6 @@ export class NatsController extends EventController implements EventControllerIn
       date_time: dateTime,
       sender,
       apikey: apiKey,
-      ...extra,
     };
 
     // Instância específica
