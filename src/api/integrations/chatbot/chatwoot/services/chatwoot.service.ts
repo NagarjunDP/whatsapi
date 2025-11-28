@@ -346,12 +346,8 @@ export class ChatwootService {
 
       return contact;
     } catch (error) {
-      if (
-        (error.status === 422 || error.response?.status === 422) &&
-        (error.message?.includes('taken') || error.response?.data?.message?.includes('taken')) &&
-        jid
-      ) {
-        this.logger.warn(`Contact with identifier ${jid} already exists, trying to find it...`);
+      if ((error.status === 422 || error.response?.status === 422) && jid) {
+        this.logger.warn(`Contact with identifier ${jid} creation failed (422). Checking if it already exists...`);
         const existingContact = await this.findContactByIdentifier(instance, jid);
         if (existingContact) {
           const contactId = existingContact.id;
@@ -2535,7 +2531,7 @@ export class ChatwootService {
     if (!remoteJid) {
       return '';
     }
-    return remoteJid.replace(/:\d+/, '').replace('@s.whatsapp.net', '').replace('@g.us', '').replace('@lid', '');
+    return remoteJid.replace(/:\d+/, '').split('@')[0];
   }
 
   public startImportHistoryMessages(instance: InstanceDto) {
