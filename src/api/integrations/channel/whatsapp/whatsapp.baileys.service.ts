@@ -1614,9 +1614,9 @@ export class BaileysStartupService extends ChannelStartupService {
       // This enables LID to phoneNumber conversion without breaking existing webhook consumers
 
       // Helper to normalize participantId as phone number
-      const normalizePhoneNumber = (id: string): string => {
+      const normalizePhoneNumber = (id: string | any): string => {
         // Remove @lid, @s.whatsapp.net suffixes and extract just the number part
-        return id.split('@')[0];
+        return String(id || '').split('@')[0];
       };
 
       try {
