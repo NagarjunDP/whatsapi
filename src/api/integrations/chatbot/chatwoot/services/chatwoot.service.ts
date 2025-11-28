@@ -2531,6 +2531,9 @@ export class ChatwootService {
     if (!remoteJid) {
       return '';
     }
+    if (remoteJid.includes('@lid')) {
+      return remoteJid;
+    }
     return remoteJid.replace(/:\d+/, '').split('@')[0];
   }
 
