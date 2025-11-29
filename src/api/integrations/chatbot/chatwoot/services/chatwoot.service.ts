@@ -2527,7 +2527,7 @@ export class ChatwootService {
     }
   }
 
-  public getNumberFromRemoteJid(remoteJid: string) {
+  public normalizeJidIdentifier(remoteJid: string) {
     if (!remoteJid) {
       return '';
     }
