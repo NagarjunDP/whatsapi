@@ -1148,12 +1148,7 @@ export class BaileysStartupService extends ChannelStartupService {
             }
           }
 
-          if (
-            (type !== 'notify' && type !== 'append') ||
-            editedMessage ||
-            received.message?.pollUpdateMessage ||
-            !received?.message
-          ) {
+          if ((type !== 'notify' && type !== 'append') || editedMessage || !received?.message) {
             continue;
           }
 
@@ -1447,18 +1442,18 @@ export class BaileysStartupService extends ChannelStartupService {
           continue;
         }
 
-        if (update.message !== null && update.status === undefined) continue;
+        if (update.message === null && update.status === undefined) continue;
 
         const updateKey = `${this.instance.id}_${key.id}_${update.status}`;
 
         const cached = await this.baileysCache.get(updateKey);
 
-        if (cached) {
+        if (cached && update.messageTimestamp == cached.messageTimestamp) {
           this.logger.info(`Update Message duplicated ignored [avoid deadlock]: ${updateKey}`);
           continue;
         }
 
-        await this.baileysCache.set(updateKey, true, 30 * 60);
+        await this.baileysCache.set(updateKey, update.messageTimestamp, 30 * 60);
 
         if (status[update.status] === 'READ' && key.fromMe) {
           if (this.configService.get<Chatwoot>('CHATWOOT').ENABLED && this.localChatwoot?.enabled) {
@@ -1489,7 +1484,7 @@ export class BaileysStartupService extends ChannelStartupService {
             remoteJid: key?.remoteJid,
             fromMe: key.fromMe,
             participant: key?.participant,
-            status: status[update.status] ?? 'DELETED',
+            status: status[update.status] ?? 'SERVER_ACK',
             pollUpdates,
             instanceId: this.instanceId,
           };
