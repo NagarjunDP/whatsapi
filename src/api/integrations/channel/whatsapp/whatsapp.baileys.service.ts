@@ -76,21 +76,19 @@ import {
   S3,
 } from '@config/env.config';
 import { BadRequestException, InternalServerErrorException, NotFoundException } from '@exceptions';
-import ffmpegPath from '@ffmpeg-installer/ffmpeg';
-import { Boom } from '@hapi/boom';
-import { createId as cuid } from '@paralleldrive/cuid2';
-import { Instance, Message } from '@prisma/client';
+import { AuthStateProvider } from '@utils/use-multi-file-auth-state-provider-files';
 import { createJid } from '@utils/createJid';
 import { fetchLatestWaWebVersion } from '@utils/fetchLatestWaWebVersion';
-import { makeProxyAgent, makeProxyAgentUndici } from '@utils/makeProxyAgent';
 import { getOnWhatsappCache, saveOnWhatsappCache } from '@utils/onWhatsappCache';
+import { makeProxyAgent, makeProxyAgentUndici } from '@utils/makeProxyAgent';
 import { status } from '@utils/renderStatus';
 import { sendTelemetry } from '@utils/sendTelemetry';
 import useMultiFileAuthStatePrisma from '@utils/use-multi-file-auth-state-prisma';
-import { AuthStateProvider } from '@utils/use-multi-file-auth-state-provider-files';
 import { useMultiFileAuthStateRedisDb } from '@utils/use-multi-file-auth-state-redis-db';
-import axios from 'axios';
-import { createHash } from 'crypto';
+
+import { BaileysMessageProcessor } from './baileysMessage.processor';
+import { useVoiceCallsBaileys } from './voiceCalls/useVoiceCallsBaileys';
+
 import makeWASocket, {
   AnyMessageContent,
   BufferedEventData,
@@ -105,7 +103,6 @@ import makeWASocket, {
   DisconnectReason,
   downloadContentFromMessage,
   downloadMediaMessage,
-  jidNormalizedUser,
   generateWAMessageFromContent,
   getAggregateVotesInPollMessage,
   GetCatalogOptions,
@@ -116,6 +113,7 @@ import makeWASocket, {
   isJidGroup,
   isJidNewsletter,
   isPnUser,
+  jidNormalizedUser,
   makeCacheableSignalKeyStore,
   MessageUpsertType,
   MessageUserReceiptUpdate,
@@ -134,15 +132,20 @@ import makeWASocket, {
 } from 'baileys';
 import { Label } from 'baileys/lib/Types/Label';
 import { LabelAssociation } from 'baileys/lib/Types/LabelAssociation';
-import { spawn } from 'child_process';
+import { createId as cuid } from '@paralleldrive/cuid2';
+import { Instance, Message } from '@prisma/client';
+import axios from 'axios';
 import { isArray, isBase64, isURL } from 'class-validator';
+import { createHash } from 'crypto';
 import EventEmitter2 from 'eventemitter2';
 import ffmpeg from 'fluent-ffmpeg';
+import ffmpegPath from '@ffmpeg-installer/ffmpeg';
 import FormData from 'form-data';
+import { Boom } from '@hapi/boom';
 import Long from 'long';
 import mimeTypes from 'mime-types';
-import NodeCache from 'node-cache';
 import cron from 'node-cron';
+import NodeCache from 'node-cache';
 import { release } from 'os';
 import { join } from 'path';
 import P from 'pino';
@@ -150,10 +153,8 @@ import qrcode, { QRCodeToDataURLOptions } from 'qrcode';
 import qrcodeTerminal from 'qrcode-terminal';
 import sharp from 'sharp';
 import { PassThrough, Readable } from 'stream';
+import { spawn } from 'child_process';
 import { v4 } from 'uuid';
-
-import { BaileysMessageProcessor } from './baileysMessage.processor';
-import { useVoiceCallsBaileys } from './voiceCalls/useVoiceCallsBaileys';
 
 export interface ExtendedIMessageKey extends proto.IMessageKey {
   remoteJidAlt?: string;
@@ -1250,7 +1251,7 @@ export class BaileysStartupService extends ChannelStartupService {
                   ...new Set(creatorCandidates.filter(Boolean).map((id) => jidNormalizedUser(id))),
                 ];
                 const uniqueVoters = [
-                  ...new Set(voterCandidates.filter(Boolean).map((id) => jidNormalizedUser(id))),
+                  ...new Set(voterCandidates.filter(Boolean).map((id) => jidNormalizedUser(id)))
                 ];
 
                 let decryptedVote;
@@ -1268,7 +1269,7 @@ export class BaileysStartupService extends ChannelStartupService {
                         successfulVoterJid = voter;
                         break;
                       }
-                    } catch (err) {
+                    } catch (_err) {
                       // Continue trying
                     }
                   }
@@ -1349,7 +1350,7 @@ export class BaileysStartupService extends ChannelStartupService {
           }
 
           if (this.configService.get<Database>('DATABASE').SAVE_DATA.NEW_MESSAGE) {
-            const { pollUpdates, ...messageData } = messageRaw;
+            const { _pollUpdates, ...messageData } = messageRaw;
             const msg = await this.prismaRepository.message.create({ data: messageData });
 
             const { remoteJid } = received.key;
@@ -1559,10 +1560,12 @@ export class BaileysStartupService extends ChannelStartupService {
 
         const cached = await this.baileysCache.get(updateKey);
 
-        const secondsSinceEpoch = Math.floor(Date.now() / 1000)
-        console.log('CACHE:', {cached, updateKey, messageTimestamp: update.messageTimestamp, secondsSinceEpoch});
+        const secondsSinceEpoch = Math.floor(Date.now() / 1000);
 
-        if ((update.messageTimestamp && update.messageTimestamp === cached) || (!update.messageTimestamp && secondsSinceEpoch === cached)) {
+        if (
+          (update.messageTimestamp && update.messageTimestamp === cached) ||
+          (!update.messageTimestamp && secondsSinceEpoch === cached)
+        ) {
           this.logger.info(`Update Message duplicated ignored [avoid deadlock]: ${updateKey}`);
           continue;
         }
@@ -1689,7 +1692,7 @@ export class BaileysStartupService extends ChannelStartupService {
           this.sendDataWebhook(Events.MESSAGES_UPDATE, message);
 
           if (this.configService.get<Database>('DATABASE').SAVE_DATA.MESSAGE_UPDATE) {
-            const { message: _msg, ...messageData } = message;
+            const { message: __msg, ...messageData } = message;
             await this.prismaRepository.messageUpdate.create({ data: messageData });
           }
 
