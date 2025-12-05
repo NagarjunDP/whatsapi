@@ -406,7 +406,7 @@ export class BaileysStartupService extends ChannelStartupService {
       qrcodeTerminal.generate(qr, { small: true }, (qrcode) =>
         this.logger.log(
           `\n{ instance: ${this.instance.name} pairingCode: ${this.instance.qrcode.pairingCode}, qrcodeCount: ${this.instance.qrcode.count} }\n` +
-            qrcode,
+          qrcode,
         ),
       );
 
@@ -861,10 +861,13 @@ export class BaileysStartupService extends ChannelStartupService {
           this.sendDataWebhook(Events.CONTACTS_UPDATE, updatedContacts);
           await Promise.all(
             updatedContacts.map(async (contact) => {
-              const update = this.prismaRepository.contact.updateMany({
-                where: { remoteJid: contact.remoteJid, instanceId: this.instanceId },
-                data: { profilePicUrl: contact.profilePicUrl },
-              });
+              if (this.configService.get<Database>('DATABASE').SAVE_DATA.CONTACTS) {
+                await this.prismaRepository.contact.updateMany({
+                  where: { remoteJid: contact.remoteJid, instanceId: this.instanceId },
+                  data: { profilePicUrl: contact.profilePicUrl },
+                });
+              }
+
 
               if (this.configService.get<Chatwoot>('CHATWOOT').ENABLED && this.localChatwoot?.enabled) {
                 const instance = { instanceName: this.instance.name, instanceId: this.instance.id };
@@ -883,8 +886,6 @@ export class BaileysStartupService extends ChannelStartupService {
                   avatar_url: contact.profilePicUrl,
                 });
               }
-
-              return update;
             }),
           );
         }
@@ -908,14 +909,17 @@ export class BaileysStartupService extends ChannelStartupService {
 
       this.sendDataWebhook(Events.CONTACTS_UPDATE, contactsRaw);
 
-      const updateTransactions = contactsRaw.map((contact) =>
-        this.prismaRepository.contact.upsert({
-          where: { remoteJid_instanceId: { remoteJid: contact.remoteJid, instanceId: contact.instanceId } },
-          create: contact,
-          update: contact,
-        }),
-      );
-      await this.prismaRepository.$transaction(updateTransactions);
+      if (this.configService.get<Database>('DATABASE').SAVE_DATA.CONTACTS) {
+        const updateTransactions = contactsRaw.map((contact) =>
+          this.prismaRepository.contact.upsert({
+            where: { remoteJid_instanceId: { remoteJid: contact.remoteJid, instanceId: contact.instanceId } },
+            create: contact,
+            update: contact,
+          }),
+        );
+        await this.prismaRepository.$transaction(updateTransactions);
+      }
+
 
       //const usersContacts = contactsRaw.filter((c) => c.remoteJid.includes('@s.whatsapp'));
     },
@@ -997,16 +1001,16 @@ export class BaileysStartupService extends ChannelStartupService {
 
         const messagesRepository: Set<string> = new Set(
           chatwootImport.getRepositoryMessagesCache(instance) ??
-            (
-              await this.prismaRepository.message.findMany({
-                select: { key: true },
-                where: { instanceId: this.instanceId },
-              })
-            ).map((message) => {
-              const key = message.key as { id: string };
+          (
+            await this.prismaRepository.message.findMany({
+              select: { key: true },
+              where: { instanceId: this.instanceId },
+            })
+          ).map((message) => {
+            const key = message.key as { id: string };
 
-              return key.id;
-            }),
+            return key.id;
+          }),
         );
 
         if (chatwootImport.getRepositoryMessagesCache(instance) === null) {
