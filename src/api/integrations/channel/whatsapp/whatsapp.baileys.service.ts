@@ -1397,6 +1397,11 @@ export class BaileysStartupService extends ChannelStartupService {
                   } else {
                     const media = await this.getBase64FromMediaMessage({ message }, true);
 
+                    if (!media) {
+                      this.logger.verbose('No valid media to upload (messageContextInfo only), skipping MinIO');
+                      return;
+                    }
+
                     const { buffer, mediaType, fileName, size } = media;
                     const mimetype = mimeTypes.lookup(fileName).toString();
                     const fullName = join(
@@ -2462,6 +2467,11 @@ export class BaileysStartupService extends ChannelStartupService {
               this.logger.warn('Message detected as media but contains no valid media content');
             } else {
               const media = await this.getBase64FromMediaMessage({ message }, true);
+
+              if (!media) {
+                this.logger.verbose('No valid media to upload (messageContextInfo only), skipping MinIO');
+                return;
+              }
 
               const { buffer, mediaType, fileName, size } = media;
 
@@ -3836,7 +3846,8 @@ export class BaileysStartupService extends ChannelStartupService {
       }
 
       if ('messageContextInfo' in msg.message && Object.keys(msg.message).length === 1) {
-        throw 'The message is messageContextInfo';
+        this.logger.verbose('Message contains only messageContextInfo, skipping media processing');
+        return null;
       }
 
       let mediaMessage: any;
