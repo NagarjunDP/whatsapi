@@ -431,7 +431,13 @@ export class ChannelStartupService {
     return data;
   }
 
-  public async sendDataWebhook<T extends object = any>(event: Events, data: T, local = true, integration?: string[], extra?: Record<string, any>) {
+  public async sendDataWebhook<T extends object = any>(
+    event: Events,
+    data: T,
+    local = true,
+    integration?: string[],
+    extra?: Record<string, any>,
+  ) {
     const serverUrl = this.configService.get<HttpServer>('SERVER').URL;
     const tzoffset = new Date().getTimezoneOffset() * 60000; //offset in milliseconds
     const localISOTime = new Date(Date.now() - tzoffset).toISOString();

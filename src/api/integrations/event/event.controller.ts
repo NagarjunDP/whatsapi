@@ -20,7 +20,18 @@ export type EmitData = {
 export interface EventControllerInterface {
   set(instanceName: string, data: any): Promise<any>;
   get(instanceName: string): Promise<any>;
-  emit({ instanceName, origin, event, data, serverUrl, dateTime, sender, apiKey, local, extra }: EmitData): Promise<void>;
+  emit({
+    instanceName,
+    origin,
+    event,
+    data,
+    serverUrl,
+    dateTime,
+    sender,
+    apiKey,
+    local,
+    extra,
+  }: EmitData): Promise<void>;
 }
 
 export class EventController {
