@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/EvolutionAPI/evolution-api/releases/latest"><img src="https://img.shields.io/github/v/release/EvolutionAPI/evolution-api?include_prereleases&label=version&color=00ffa7" alt="Latest version" /></a>
+  <a href="https://github.com/evolution-foundation/evolution-api/releases/latest"><img src="https://img.shields.io/github/v/release/evolution-foundation/evolution-api?include_prereleases&label=version&color=00ffa7" alt="Latest version" /></a>
   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License: Apache 2.0" /></a>
   <a href="https://docs.evolutionfoundation.com.br"><img src="https://img.shields.io/badge/Docs-evolutionfoundation.com.br-00ffa7" alt="Documentation" /></a>
   <a href="https://evolutionfoundation.com.br/community"><img src="https://img.shields.io/badge/Community-Join%20us-white" alt="Community" /></a>
@@ -37,7 +37,7 @@ Evolution API began as a WhatsApp controller API based on [CodeChat](https://git
 
 ## Part of the Evolution Foundation ecosystem
 
-Evolution API is one of the messaging engines maintained by Evolution Foundation. It is used as a WhatsApp provider by the [Evo CRM Community](https://github.com/EvolutionAPI/evo-crm-community) and other projects in the ecosystem.
+Evolution API is one of the messaging engines maintained by Evolution Foundation. It is used as a WhatsApp provider by the [Evo CRM Community](https://github.com/evolution-foundation/evo-crm-community) and other projects in the ecosystem.
 
 ---
 
@@ -80,7 +80,7 @@ Evolution API integrates natively with many platforms:
 ### Installation
 
 ```bash
-git clone git@github.com:EvolutionAPI/evolution-api.git
+git clone git@github.com:evolution-foundation/evolution-api.git
 cd evolution-api
 
 # Install dependencies
