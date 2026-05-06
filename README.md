@@ -170,6 +170,14 @@ Local storage or S3/MinIO. Automatic media download from WhatsApp. Optional audi
 
 ---
 
+## Hosting
+
+Deploy Evolution API with optimized infrastructure through our HostGator partnership:
+
+[**Evolution API VPS — HostGator**](https://evolution-api.com/vps-evolution-api)
+
+---
+
 ## Telemetry
 
 Evolution API collects anonymous telemetry data (routes used, most accessed routes, API version) to help improve the service. **No sensitive or personal data is collected.** This information helps us identify improvements and provide a better experience for users.
