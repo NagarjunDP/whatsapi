@@ -37,24 +37,29 @@ RUN apk update && \
 
 ENV TZ=America/Sao_Paulo
 ENV DOCKER_ENV=true
+ENV SERVER_PORT=7860
 
 WORKDIR /evolution
 
-COPY --from=builder /evolution/package.json ./package.json
-COPY --from=builder /evolution/package-lock.json ./package-lock.json
+RUN chown -R node:node /evolution
 
-COPY --from=builder /evolution/node_modules ./node_modules
-COPY --from=builder /evolution/dist ./dist
-COPY --from=builder /evolution/prisma ./prisma
-COPY --from=builder /evolution/manager ./manager
-COPY --from=builder /evolution/public ./public
-COPY --from=builder /evolution/.env ./.env
-COPY --from=builder /evolution/Docker ./Docker
-COPY --from=builder /evolution/runWithProvider.js ./runWithProvider.js
-COPY --from=builder /evolution/tsup.config.ts ./tsup.config.ts
+COPY --chown=node:node --from=builder /evolution/package.json ./package.json
+COPY --chown=node:node --from=builder /evolution/package-lock.json ./package-lock.json
+
+COPY --chown=node:node --from=builder /evolution/node_modules ./node_modules
+COPY --chown=node:node --from=builder /evolution/dist ./dist
+COPY --chown=node:node --from=builder /evolution/prisma ./prisma
+COPY --chown=node:node --from=builder /evolution/manager ./manager
+COPY --chown=node:node --from=builder /evolution/public ./public
+COPY --chown=node:node --from=builder /evolution/.env ./.env
+COPY --chown=node:node --from=builder /evolution/Docker ./Docker
+COPY --chown=node:node --from=builder /evolution/runWithProvider.js ./runWithProvider.js
+COPY --chown=node:node --from=builder /evolution/tsup.config.ts ./tsup.config.ts
 
 ENV DOCKER_ENV=true
 
-EXPOSE 8080
+EXPOSE 7860
+
+USER node
 
 ENTRYPOINT ["/bin/bash", "-c", ". ./Docker/scripts/deploy_database.sh && npm run start:prod" ]
