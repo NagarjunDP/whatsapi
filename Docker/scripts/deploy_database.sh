@@ -2,7 +2,7 @@
 
 source ./Docker/scripts/env_functions.sh
 
-if [ "$DOCKER_ENV" != "true" ]; then
+if [ "$DOCKER_ENV" != "true" ] || [ -z "$DATABASE_PROVIDER" ]; then
     export_env_vars
 fi
 
